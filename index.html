@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Прайс: Оригинальная парфюмерия</title>
     
+    <link rel="icon" href="image.png" type="image/png">
+
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     
     <style>
@@ -23,7 +25,7 @@
             border-radius: 10px;
         }
         
-        /* === ЗАГОЛОВОК, ЛОГОТИП И КНОПКА === */
+        /* === ШАПКА === */
         .header-section { 
             text-align: center; 
             margin-bottom: 30px; 
@@ -31,7 +33,7 @@
             padding-bottom: 30px; 
         }
         #header-logo {
-            max-width: 300px; /* Максимальная ширина логотипа */
+            max-width: 300px;
             height: auto;
             margin-bottom: 20px; 
             display: block;
@@ -41,26 +43,26 @@
         h1 { color: #333; margin: 0 0 10px 0; }
         #ai-slogan { font-style: italic; color: #555; min-height: 24px; font-size: 1.1em; margin-bottom: 20px; }
 
-        /* Стиль кнопки ВКонтакте */
+        /* Кнопка ВКонтакте */
         .vk-button {
             display: inline-block;
-            background-color: #0077FF; /* Фирменный цвет VK */
+            background-color: #0077FF;
             color: white;
             text-decoration: none;
             font-weight: bold;
             font-size: 16px;
             padding: 12px 30px;
-            border-radius: 50px; /* Закругленная форма */
+            border-radius: 50px;
             box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
             transition: all 0.3s ease;
         }
         .vk-button:hover {
-            background-color: #005ecc; /* Цвет при наведении */
-            transform: translateY(-2px); /* Легкое всплытие */
+            background-color: #005ecc;
+            transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0, 119, 255, 0.4);
         }
 
-        /* === БЛОК ЗАГРУЗКИ === */
+        /* Блок загрузки */
         #manual-upload {
             display: none;
             text-align: center;
@@ -80,9 +82,7 @@
             font-weight: bold;
             margin-top: 10px;
         }
-        .btn-upload:hover { background-color: #5a6268; }
         input[type="file"] { display: none; }
-
         #loading { text-align: center; color: #007bff; padding: 40px; }
         .spinner {
             border: 6px solid #f3f3f3;
@@ -94,7 +94,6 @@
             margin: 0 auto 15px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         #table-wrapper { display: none; }
     </style>
 </head>
@@ -105,7 +104,6 @@
         <img src="image.png" alt="Rich Flavour Логотип" id="header-logo">
         
         <h1>Rich Flavour: Прайс-лист</h1>
-        
         <p id="ai-slogan">Загрузка...</p>
 
         <a href="http://vk.me/richflavour29" target="_blank" class="vk-button">
@@ -141,8 +139,6 @@
 
 <script>
     const FILE_NAME = 'price.xlsx'; 
-    
-    // Настройка ИИ 
     const AI_PROMPT = "Напиши короткий, статусный слоган для магазина оригинальной парфюмерии Rich Flavour. Сделай акцент на 100% подлинности. Максимум 10 слов. Без кавычек.";
 
     $(document).ready(function() {
@@ -175,7 +171,7 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // 3. Обработка Excel
+    // 3. Обработка данных
     function processData(buffer) {
         try {
             var workbook = XLSX.read(buffer, {type: 'array'});
@@ -185,10 +181,24 @@
         } catch (e) { alert("Ошибка: " + e.message); }
     }
 
-    // 4. Таблица
+    // 4. Отрисовка таблицы (С ФУНКЦИЕЙ ОКРУГЛЕНИЯ)
     function renderTable(data) {
         var headers = data[0].map(h => ({ title: h || "Col" }));
+        
+        // Берем строки
         var rows = data.slice(1);
+
+        // === МАГИЯ ЗДЕСЬ: ЧИСТИМ ЦЕНЫ ===
+        rows = rows.map(function(row) {
+            return row.map(function(cell) {
+                // Если ячейка - это число, округляем его до целого
+                if (typeof cell === 'number') {
+                    return Math.round(cell);
+                }
+                return cell;
+            });
+        });
+        // =================================
 
         $('#priceTable').DataTable({
             data: rows,
