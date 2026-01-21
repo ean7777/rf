@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прайс: Оригинальная парфюмерия</title>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        
+        /* === ЗАГОЛОВОК, ЛОГОТИП И КНОПКА === */
+        .header-section { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            border-bottom: 2px solid #eee; 
+            padding-bottom: 30px; 
+        }
+        #header-logo {
+            max-width: 300px; /* Максимальная ширина логотипа */
+            height: auto;
+            margin-bottom: 20px; /* Отступ снизу */
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        h1 { color: #333; margin: 0 0 10px 0; }
+        #ai-slogan { font-style: italic; color: #555; min-height: 24px; font-size: 1.1em; margin-bottom: 20px; }
+
+        /* Стиль кнопки ВКонтакте */
+        .vk-button {
+            display: inline-block;
+            background-color: #0077FF; /* Фирменный цвет VK */
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 12px 30px;
+            border-radius: 50px; /* Закругленная форма */
+            box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        .vk-button:hover {
+            background-color: #005ecc; /* Цвет при наведении */
+            transform: translateY(-2px); /* Легкое всплытие */
+            box-shadow: 0 6px 15px rgba(0, 119, 255, 0.4);
+        }
+
+        /* === БЛОК ЗАГРУЗКИ === */
+        #manual-upload {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            border: 2px dashed #ff6b6b;
+            background-color: #fff5f5;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .btn-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .btn-upload:hover { background-color: #5a6268; }
+        input[type="file"] { display: none; }
+
+        #loading { text-align: center; color: #007bff; padding: 40px; }
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        #table-wrapper { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <img src="image_0.png" alt="Rich Flavour Логотип" id="header-logo">
+        
+        <h1>Rich Flavour: Прайс-лист</h1>
+        
+        <p id="ai-slogan">Загрузка...</p>
+
+        <a href="http://vk.me/richflavour29" target="_blank" class="vk-button">
+            📩 Оформить заказ
+        </a>
+    </div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>Ищем файл price.xlsx...</div>
+    </div>
+
+    <div id="manual-upload">
+        <h3 style="color:#d63031">Файл не загрузился автоматически</h3>
+        <p>Выберите файл вручную:</p>
+        <label class="btn-upload">
+            📂 Выбрать price.xlsx
+            <input type="file" id="fileInput" accept=".xlsx, .xls">
+        </label>
+    </div>
+
+    <div id="table-wrapper">
+        <table id="priceTable" class="display" style="width:100%">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    const FILE_NAME = 'price.xlsx'; 
+    
+    // Настройка ИИ 
+    const AI_PROMPT = "Напиши короткий, статусный слоган для магазина оригинальной парфюмерии Rich Flavour. Сделай акцент на 100% подлинности. Максимум 10 слов. Без кавычек.";
+
+    $(document).ready(function() {
+        generateSlogan();
+        tryAutoLoad();
+    });
+
+    // 1. Автозагрузка
+    async function tryAutoLoad() {
+        try {
+            const response = await fetch(FILE_NAME);
+            if (!response.ok) throw new Error("Файл не найден");
+            const arrayBuffer = await response.arrayBuffer();
+            processData(arrayBuffer);
+        } catch (error) {
+            console.warn("Автозагрузка не удалась:", error);
+            $('#loading').hide();
+            $('#manual-upload').fadeIn();
+        }
+    }
+
+    // 2. Ручная загрузка
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        $('#manual-upload').hide();
+        $('#loading').html('<div class="spinner"></div><div>Обработка...</div>').show();
+        var reader = new FileReader();
+        reader.onload = function(e) { processData(new Uint8Array(e.target.result)); };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // 3. Обработка Excel
+    function processData(buffer) {
+        try {
+            var workbook = XLSX.read(buffer, {type: 'array'});
+            var jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+            if (jsonData.length > 0) renderTable(jsonData);
+            else { alert("Файл пустой!"); $('#loading').hide(); $('#manual-upload').show(); }
+        } catch (e) { alert("Ошибка: " + e.message); }
+    }
+
+    // 4. Таблица
+    function renderTable(data) {
+        var headers = data[0].map(h => ({ title: h || "Col" }));
+        var rows = data.slice(1);
+
+        $('#priceTable').DataTable({
+            data: rows,
+            columns: headers,
+            pageLength: 20,
+            language: {
+                "processing": "Подождите...",
+                "search": "🔍 Поиск аромата:",
+                "lengthMenu": "Показать _MENU_",
+                "info": "_START_ - _END_ из _TOTAL_",
+                "paginate": { "next": ">>", "previous": "<<" },
+                "zeroRecords": "Аромат не найден"
+            }
+        });
+
+        $('#loading').hide();
+        $('#table-wrapper').fadeIn();
+    }
+
+    // 5. ИИ Слоган
+    async function generateSlogan() {
+        const url = `https://text.pollinations.ai/${encodeURIComponent(AI_PROMPT)}`;
+        try {
+            const response = await fetch(url);
+            if(response.ok) {
+                document.getElementById('ai-slogan').innerText = "✨ " + await response.text();
+            }
+        } catch (e) {
+            document.getElementById('ai-slogan').innerText = "Оригинальная парфюмерия Rich Flavour";
+        }
+    }
+</script>
+
+</body>
+</html>
