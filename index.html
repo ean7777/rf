@@ -7,6 +7,17 @@
     
     <link rel="icon" href="image.png" type="image/png">
 
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=106427807', 'ym');
+
+        ym(106427807, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/106427807" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     
     <style>
@@ -130,8 +141,6 @@
     const FILE_NAME = 'price.xlsx'; 
     
     // === ВАШИ ПРОВЕРЕННЫЕ ФРАЗЫ ===
-    // Здесь нет ИИ, только то, что мы написали сами.
-    // Вы можете менять этот текст как хотите.
     const SLOGANS = [
         "Гарантия подлинности каждой позиции.",
         "Ваш надежный поставщик оригинальной парфюмерии.",
@@ -211,9 +220,8 @@
         $('#table-wrapper').fadeIn();
     }
 
-    // 5. Функция выбора фразы (Без ИИ)
+    // 5. Функция выбора фразы
     function showRandomSlogan() {
-        // Берем случайную фразу из нашего списка SLOGANS
         const text = SLOGANS[Math.floor(Math.random() * SLOGANS.length)];
         document.getElementById('static-slogan').innerText = text;
     }
@@ -221,4 +229,5 @@
 
 </body>
 </html>
+
 
