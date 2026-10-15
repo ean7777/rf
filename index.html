@@ -167,3 +167,347 @@
         .footer-logo { font-weight: bold; font-size: 1.2em; margin-bottom: 10px; display: block; color: #fff; text-decoration: none;}
         .footer-links a { color: #adb5bd; text-decoration: none; margin: 0 10px; font-size: 0.9em; }
         .footer-links a:hover { color: #fff; }
+        .copyright { margin-top: 20px; color: #6c757d; font-size: 0.8em; }
+
+        /* МОБИЛЬНАЯ АДАПТАЦИЯ */
+        @media screen and (max-width: 768px) {
+            body { background-color: #fff; }
+            .container { padding: 12px; box-shadow: none; border-radius: 0; }
+            .header-section { margin-bottom: 15px; padding-bottom: 15px; }
+            #header-logo { max-width: 220px; }
+            h1 { font-size: 1.5em; }
+            #static-slogan { font-size: 0.95em; padding: 0 2%; margin-bottom: 15px; }
+            
+            .dataTables_wrapper .dataTables_length, 
+            .dataTables_wrapper .dataTables_filter {
+                float: none !important;
+                text-align: left !important;
+                margin-bottom: 15px;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100% !important;
+                margin-left: 0 !important;
+                margin-top: 5px;
+                padding: 8px;
+                box-sizing: border-box;
+            }
+            table.dataTable tbody td {
+                font-size: 13px !important;
+                padding: 8px 10px !important;
+            }
+            .social-button {
+                padding: 10px 20px;
+                font-size: 14px;
+                width: 100%;
+                max-width: 280px;
+            }
+            .buttons-wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-content">
+    <div class="container">
+        <div class="header-section">
+            <img src="image.png" alt="Rich Flavour Логотип" id="header-logo" onerror="this.style.display='none'">
+            <h1>Прайс-лист</h1>
+            <span id="update-date"></span>
+            <p id="static-slogan">Только оригинал.</p>
+            
+            <div class="buttons-wrapper">
+                <a href="http://vk.me/richflavour29" target="_blank" class="social-button btn-vk">ВКонтакте</a>
+                <a href="https://t.me/rich_flavour" target="_blank" class="social-button btn-tg">Telegram</a>
+            </div>
+        </div>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <div>Ищем файл price.xlsx...</div>
+        </div>
+
+        <div id="manual-upload">
+            <h3 style="color:#d63031">Файл не загрузился автоматически</h3>
+            <p>Выберите файл вручную:</p>
+            <label class="btn-upload">📂 Выбрать price.xlsx<input type="file" id="fileInput" accept=".xlsx, .xls"></label>
+        </div>
+
+        <div id="table-wrapper">
+            <p style="text-align:center; color:#888; font-size:0.9em; margin-bottom:10px;">
+                💡 Нажмите на позицию, чтобы скопировать или быстро заказать.
+            </p>
+            <table id="priceTable" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Бренд</th>
+                        <th>Цена</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО -->
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-card">
+        <button class="modal-close" onclick="closeOrderModal()">&times;</button>
+        <h3>Выберите действие</h3>
+        <div class="modal-product-title" id="modalTitle"></div>
+        <div class="modal-product-price" id="modalPrice"></div>
+        
+        <div class="modal-actions">
+            <a href="#" id="modalVkLink" target="_blank" class="modal-btn btn-modal-vk">💬 Заказать ВКонтакте</a>
+            <a href="#" id="modalTgLink" target="_blank" class="modal-btn btn-modal-tg">✈️ Заказать в Telegram</a>
+            <button class="modal-btn btn-modal-copy" onclick="copyCurrentProduct()">📋 Скопировать название</button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <span class="footer-logo">Rich Flavour</span>
+        <p style="color: #adb5bd; font-size: 0.9em; margin-bottom: 20px;">
+            Оригинальная парфюмерия оптом и в розницу.<br>
+            Архангельск и доставка по всей России.
+        </p>
+        
+        <div class="footer-links">
+            <a href="http://vk.me/richflavour29" target="_blank">Заказать ВКонтакте</a> • 
+            <a href="https://t.me/rich_flavour" target="_blank">Канал Telegram</a>
+        </div>
+
+        <div class="copyright">
+            © 2026 Rich Flavour. Все права защищены.
+        </div>
+    </div>
+</footer>
+
+<button id="scrollTopBtn" title="Наверх">⬆</button>
+<div id="toast">✅ Скопировано!</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
+
+<script>
+    const FILE_NAME = 'price.xlsx'; 
+    const SLOGANS = [
+        "Гарантия подлинности каждой позиции.",
+        "Ваш надежный поставщик оригинальной парфюмерии.",
+        "Честные цены, огромный выбор и только оригинал.",
+        "Rich Flavour — качество, которому доверяют.",
+        "Лучшие условия для наших партнеров и клиентов.",
+        "Оригинальная парфюмерия без компромиссов."
+    ];
+
+    let selectedProductText = "";
+
+    $(document).ready(function() {
+        showRandomSlogan();
+        tryAutoLoad();
+
+        $(window).scroll(function() {
+            if ($(this).scrollTop() > 300) { $('#scrollTopBtn').fadeIn(); } 
+            else { $('#scrollTopBtn').fadeOut(); }
+        });
+        $('#scrollTopBtn').click(function() {
+            $('html, body').animate({scrollTop : 0}, 600);
+            return false;
+        });
+
+        // Закрытие модального окна по клику вне карты
+        $('#orderModal').on('click', function(e) {
+            if ($(e.target).hasClass('modal-overlay')) {
+                closeOrderModal();
+            }
+        });
+    });
+
+    async function tryAutoLoad() {
+        try {
+            const response = await fetch(FILE_NAME + "?v=" + new Date().getTime());
+            if (!response.ok) throw new Error("Файл не найден");
+            
+            const lastModified = response.headers.get("Last-Modified");
+            if (lastModified) {
+                const date = new Date(lastModified);
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('update-date').innerText = "📅 Прайс обновлен: " + date.toLocaleDateString('ru-RU', options);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            processData(arrayBuffer);
+        } catch (error) {
+            console.warn("Автозагрузка не удалась:", error);
+            $('#loading').hide();
+            $('#manual-upload').fadeIn();
+        }
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        $('#manual-upload').hide();
+        $('#loading').html('<div class="spinner"></div><div>Обработка...</div>').show();
+        var reader = new FileReader();
+        reader.onload = function(e) { processData(new Uint8Array(e.target.result)); };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function processData(buffer) {
+        try {
+            var workbook = XLSX.read(buffer, {type: 'array'});
+            var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            var jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+            
+            if (jsonData.length > 1) {
+                renderTable(jsonData);
+            } else { 
+                alert("Файл пустой или поврежден!"); 
+                $('#loading').hide(); 
+                $('#manual-upload').show(); 
+            }
+        } catch (e) { 
+            alert("Ошибка чтения файла: " + e.message); 
+            $('#loading').hide();
+            $('#manual-upload').show();
+        }
+    }
+
+    function renderTable(data) {
+        var rows = [];
+        for (var i = 1; i < data.length; i++) {
+            var row = data[i];
+            if (row && row.length > 0 && row[0]) {
+                var brandVal = String(row[0] || "").trim();
+                var priceVal = row[1] !== undefined && row[1] !== null ? row[1] : "";
+                if (typeof priceVal === 'number') {
+                    priceVal = Math.round(priceVal);
+                } else {
+                    priceVal = String(priceVal).trim();
+                }
+                rows.push({
+                    brand: brandVal,
+                    price: priceVal
+                });
+            }
+        }
+
+        $.fn.dataTable.ext.errMode = 'none';
+
+        for (let key in localStorage) {
+            if (key.startsWith('DataTables_priceTable')) {
+                localStorage.removeItem(key);
+            }
+        }
+
+        if ($.fn.DataTable.isDataTable('#priceTable')) {
+            $('#priceTable').DataTable().clear().destroy();
+        }
+
+        var table = $('#priceTable').DataTable({
+            data: rows,
+            columns: [
+                { 
+                    data: 'brand', 
+                    title: 'Бренд', 
+                    width: '80%',
+                    render: function(data, type, row) {
+                        if (type === 'display') {
+                            var searchVal = table ? table.search().trim() : "";
+                            if (searchVal.length > 0) {
+                                var regex = new RegExp('(' + escapeRegExp(searchVal) + ')', 'gi');
+                                return data.replace(regex, '<mark>$1</mark>');
+                            }
+                        }
+                        return data;
+                    }
+                },
+                { data: 'price', title: 'Цена', width: '20%' }
+            ],
+            pageLength: 25, // По умолчанию 25 строк
+            lengthMenu: [[25, 50, 100], [25, 50, 100]], // Убраны 200 и 500 для быстрой работы
+            displayStart: 0,
+            stateSave: false,
+            autoWidth: false,
+            destroy: true,
+            language: {
+                "processing": "Подождите...",
+                "search": "🔍 Поиск аромата:",
+                "lengthMenu": "Показать _MENU_",
+                "info": "_START_ - _END_ из _TOTAL_",
+                "paginate": { "next": ">>", "previous": "<<" },
+                "zeroRecords": "Аромат не найден"
+            }
+        });
+
+        table.on('draw', function () {
+            var body = $(table.table().body());
+            body.unhighlight && body.unhighlight();
+        });
+
+        table.page(0).draw(false);
+
+        $('#priceTable tbody').off('click', 'tr').on('click', 'tr', function () {
+            var rowData = table.row(this).data();
+            if (rowData) {
+                openOrderModal(rowData.brand, rowData.price);
+            }
+        });
+
+        $('#loading').hide();
+        $('#table-wrapper').fadeIn();
+    }
+
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function openOrderModal(brand, price) {
+        selectedProductText = brand + " — " + price + " руб.";
+        $('#modalTitle').text(brand);
+        $('#modalPrice').text(price ? price + " ₽" : "Цена по запросу");
+        
+        var message = "Здравствуйте! Хочу заказать: " + brand + " (Цена: " + price + " руб.)";
+        var vkUrl = "https://vk.me/richflavour29?text=" + encodeURIComponent(message);
+        var tgUrl = "https://t.me/rich_flavour"; 
+
+        $('#modalVkLink').attr('href', vkUrl);
+        $('#modalTgLink').attr('href', tgUrl);
+
+        $('#orderModal').css('display', 'flex').hide().fadeIn(200);
+    }
+
+    function closeOrderModal() {
+        $('#orderModal').fadeOut(200);
+    }
+
+    function copyCurrentProduct() {
+        if (selectedProductText) {
+            navigator.clipboard.writeText(selectedProductText).then(function() {
+                showToast();
+                closeOrderModal();
+            });
+        }
+    }
+
+    function showRandomSlogan() {
+        const text = SLOGANS[Math.floor(Math.random() * SLOGANS.length)];
+        document.getElementById('static-slogan').innerText = text;
+    }
+
+    function showToast() {
+        var x = document.getElementById("toast");
+        x.className = "show";
+        setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+    }
+</script>
+
+</body>
+</html>
