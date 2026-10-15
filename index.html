@@ -275,7 +275,6 @@
 
         $.fn.dataTable.ext.errMode = 'none';
 
-        // ПРИНУДИТЕЛЬНО ОЧИЩАЕМ ЛОКАЛЬНОЕ ХРАНИЛИЩЕ СОСТОЯНИЯ ТАБЛИЦЫ
         for (let key in localStorage) {
             if (key.startsWith('DataTables_priceTable')) {
                 localStorage.removeItem(key);
@@ -292,7 +291,8 @@
                 { data: 'brand', title: 'Бренд', width: '80%' },
                 { data: 'price', title: 'Цена', width: '20%' }
             ],
-            pageLength: 20,
+            pageLength: 100,
+            lengthMenu: [[100, 200, 500], [100, 200, 500]],
             displayStart: 0,
             stateSave: false,
             autoWidth: false,
