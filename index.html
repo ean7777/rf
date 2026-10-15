@@ -200,7 +200,8 @@
 
     async function tryAutoLoad() {
         try {
-            const response = await fetch(FILE_NAME + "?v=" + Math.random());
+            // Добавляем случайный параметр, чтобы файл не брался из кэша браузера
+            const response = await fetch(FILE_NAME + "?v=" + new Date().getTime());
             if (!response.ok) throw new Error("Файл не найден");
             
             const lastModified = response.headers.get("Last-Modified");
@@ -222,7 +223,7 @@
     document.getElementById('fileInput').addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        $('#manual-upload-div').hide();
+        $('#manual-upload').hide();
         $('#loading').html('<div class="spinner"></div><div>Обработка...</div>').show();
         var reader = new FileReader();
         reader.onload = function(e) { processData(new Uint8Array(e.target.result)); };
@@ -260,7 +261,7 @@
 
         $.fn.dataTable.ext.errMode = 'none';
 
-        // Уничтожаем старую таблицу со сбросом кэша и состояния пагинации
+        // Уничтожаем старую таблицу и полностью очищаем DOM-элемент
         if ($.fn.DataTable.isDataTable('#priceTable')) {
             $('#priceTable').DataTable().clear().destroy();
             $('#priceTable').empty();
@@ -270,8 +271,8 @@
             data: rows,
             columns: headers,
             pageLength: 20,
-            displayStart: 0, // ПРИНУДИТЕЛЬНО начинаем с 0-й строки (1-я страница)
-            stateSave: false, // Отключаем сохранение состояния пагинации в браузере
+            displayStart: 0,
+            stateSave: false,
             autoWidth: false,
             destroy: true,
             columnDefs: [
@@ -293,8 +294,8 @@
             }
         });
 
-        // Принудительно переходим на первую страницу на всякий случай
-        table.page('first').draw('page');
+        // ПРИНУДИТЕЛЬНЫЙ СБРОС НА 0-ю СТРАНИЦУ
+        table.page(0).draw(false);
 
         $('#priceTable tbody').off('click', 'tr').on('click', 'tr', function () {
             var rowData = table.row(this).data();
