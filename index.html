@@ -74,11 +74,13 @@
         @keyframes fadeout { from {bottom: 80px; opacity: 1;} to {bottom: 0; opacity: 0;} }
 
         /* ТАБЛИЦА */
+        table.dataTable { width: 100% !important; }
         table.dataTable tbody tr { cursor: pointer; transition: background-color 0.1s; }
         table.dataTable tbody tr:hover { background-color: #fff3cd !important; }
         table.dataTable tbody td {
             color: #212529 !important;
             font-size: 14px;
+            padding: 10px 15px !important;
         }
         thead { background: white; }
 
@@ -111,7 +113,7 @@
 <div class="main-content">
     <div class="container">
         <div class="header-section">
-            <img src="image.png" alt="Rich Flavour Логотип" id="header-logo">
+            <img src="image.png" alt="Rich Flavour Логотип" id="header-logo" onerror="this.style.display='none'">
             <h1>Прайс-лист</h1>
             <span id="update-date"></span>
             <p id="static-slogan">Только оригинал.</p>
@@ -241,7 +243,10 @@
 
         var rawHeaders = data[0];
         var headers = rawHeaders.map(function(h, index) {
-            return { title: h ? String(h) : "Колонка " + (index + 1) };
+            return { 
+                title: h ? String(h) : "Колонка " + (index + 1),
+                width: index === 0 ? "80%" : "20%" // Задаем пропорции: колонка бренда широкая, цены — компактные
+            };
         });
 
         var rows = data.slice(1).map(function(row) {
@@ -253,10 +258,8 @@
             });
         });
 
-        // Отключаем всплывающие ошибки DataTables
         $.fn.dataTable.ext.errMode = 'none';
 
-        // Уничтожаем старую таблицу при повторной инициализации
         if ($.fn.DataTable.isDataTable('#priceTable')) {
             $('#priceTable').DataTable().destroy();
             $('#priceTable').empty();
@@ -266,13 +269,14 @@
             data: rows,
             columns: headers,
             pageLength: 20,
+            autoWidth: false, // Отключаем авторасчет, чтобы ширины из columns работали стабильно
             destroy: true,
             columnDefs: [
                 { 
                     targets: "_all", 
                     defaultContent: "", 
                     render: function(data, type, row) {
-                        return data ? '<span style="color: #212529 !important; display: block;">' + data + '</span>' : '';
+                        return data ? '<span style="color: #212529 !important; display: block; width: 100%;">' + data + '</span>' : '';
                     }
                 }
             ],
