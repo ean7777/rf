@@ -80,7 +80,7 @@
         table.dataTable tbody td {
             color: #212529 !important;
             font-size: 14px;
-            padding: 10px 15px !important;
+            padding: 12px 15px !important;
         }
         thead { background: white; }
 
@@ -140,7 +140,12 @@
                 💡 Нажмите на строку, чтобы скопировать.
             </p>
             <table id="priceTable" class="display" style="width:100%">
-                <thead></thead>
+                <thead>
+                    <tr>
+                        <th>Бренд</th>
+                        <th>Цена</th>
+                    </tr>
+                </thead>
                 <tbody></tbody>
             </table>
         </div>
@@ -200,7 +205,6 @@
 
     async function tryAutoLoad() {
         try {
-            // Добавляем случайный параметр, чтобы файл не брался из кэша браузера
             const response = await fetch(FILE_NAME + "?v=" + new Date().getTime());
             if (!response.ok) throw new Error("Файл не найден");
             
@@ -233,57 +237,66 @@
     function processData(buffer) {
         try {
             var workbook = XLSX.read(buffer, {type: 'array'});
-            var jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-            if (jsonData.length > 0) renderTable(jsonData);
-            else { alert("Файл пустой!"); $('#loading').hide(); $('#manual-upload').show(); }
-        } catch (e) { alert("Ошибка: " + e.message); }
+            var firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            var jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+            
+            if (jsonData.length > 1) {
+                renderTable(jsonData);
+            } else { 
+                alert("Файл пустой или поврежден!"); 
+                $('#loading').hide(); 
+                $('#manual-upload').show(); 
+            }
+        } catch (e) { 
+            alert("Ошибка чтения файла: " + e.message); 
+            $('#loading').hide();
+            $('#manual-upload').show();
+        }
     }
 
     function renderTable(data) {
-        if (!data || data.length === 0) return;
-
-        var rawHeaders = data[0];
-        var headers = rawHeaders.map(function(h, index) {
-            return { 
-                title: h ? String(h) : "Колонка " + (index + 1),
-                width: index === 0 ? "80%" : "20%"
-            };
-        });
-
-        var rows = data.slice(1).map(function(row) {
-            return rawHeaders.map(function(_, colIdx) {
-                var cell = row[colIdx];
-                if (cell === undefined || cell === null) return "";
-                if (typeof cell === 'number') return Math.round(cell);
-                return String(cell);
-            });
-        });
+        var rows = [];
+        for (var i = 1; i < data.length; i++) {
+            var row = data[i];
+            if (row && row.length > 0 && row[0]) {
+                var brandVal = String(row[0] || "").trim();
+                var priceVal = row[1] !== undefined && row[1] !== null ? row[1] : "";
+                if (typeof priceVal === 'number') {
+                    priceVal = Math.round(priceVal);
+                } else {
+                    priceVal = String(priceVal).trim();
+                }
+                rows.push({
+                    brand: brandVal,
+                    price: priceVal
+                });
+            }
+        }
 
         $.fn.dataTable.ext.errMode = 'none';
 
-        // Уничтожаем старую таблицу и полностью очищаем DOM-элемент
+        // ПРИНУДИТЕЛЬНО ОЧИЩАЕМ ЛОКАЛЬНОЕ ХРАНИЛИЩЕ СОСТОЯНИЯ ТАБЛИЦЫ
+        for (let key in localStorage) {
+            if (key.startsWith('DataTables_priceTable')) {
+                localStorage.removeItem(key);
+            }
+        }
+
         if ($.fn.DataTable.isDataTable('#priceTable')) {
             $('#priceTable').DataTable().clear().destroy();
-            $('#priceTable').empty();
         }
 
         var table = $('#priceTable').DataTable({
             data: rows,
-            columns: headers,
+            columns: [
+                { data: 'brand', title: 'Бренд', width: '80%' },
+                { data: 'price', title: 'Цена', width: '20%' }
+            ],
             pageLength: 20,
             displayStart: 0,
             stateSave: false,
             autoWidth: false,
             destroy: true,
-            columnDefs: [
-                { 
-                    targets: "_all", 
-                    defaultContent: "", 
-                    render: function(data, type, row) {
-                        return data ? '<span style="color: #212529 !important; display: block; width: 100%;">' + data + '</span>' : '';
-                    }
-                }
-            ],
             language: {
                 "processing": "Подождите...",
                 "search": "🔍 Поиск аромата:",
@@ -294,13 +307,12 @@
             }
         });
 
-        // ПРИНУДИТЕЛЬНЫЙ СБРОС НА 0-ю СТРАНИЦУ
         table.page(0).draw(false);
 
         $('#priceTable tbody').off('click', 'tr').on('click', 'tr', function () {
             var rowData = table.row(this).data();
             if (rowData) {
-                var textToCopy = rowData.join(' '); 
+                var textToCopy = rowData.brand + " — " + rowData.price; 
                 navigator.clipboard.writeText(textToCopy).then(function() {
                     showToast();
                 }, function(err) { console.error('Ошибка копирования: ', err); });
