@@ -25,7 +25,6 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/106427807" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
     
     <style>
         body {
@@ -77,6 +76,10 @@
         /* ТАБЛИЦА */
         table.dataTable tbody tr { cursor: pointer; transition: background-color 0.1s; }
         table.dataTable tbody tr:hover { background-color: #fff3cd !important; }
+        table.dataTable tbody td {
+            color: #212529 !important;
+            font-size: 14px;
+        }
         thead { background: white; }
 
         /* ЗАГРУЗКА */
@@ -167,7 +170,6 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
 
 <script>
     const FILE_NAME = 'price.xlsx'; 
@@ -235,26 +237,44 @@
     }
 
     function renderTable(data) {
-        var headers = data[0].map(h => ({ title: h || "Col" }));
-        var rows = data.slice(1);
+        if (!data || data.length === 0) return;
 
-        rows = rows.map(function(row) {
-            return row.map(function(cell) {
+        var rawHeaders = data[0];
+        var headers = rawHeaders.map(function(h, index) {
+            return { title: h ? String(h) : "Колонка " + (index + 1) };
+        });
+
+        var rows = data.slice(1).map(function(row) {
+            return rawHeaders.map(function(_, colIdx) {
+                var cell = row[colIdx];
+                if (cell === undefined || cell === null) return "";
                 if (typeof cell === 'number') return Math.round(cell);
-                return cell;
+                return String(cell);
             });
         });
 
         // Отключаем всплывающие ошибки DataTables
         $.fn.dataTable.ext.errMode = 'none';
 
+        // Уничтожаем старую таблицу при повторной инициализации
+        if ($.fn.DataTable.isDataTable('#priceTable')) {
+            $('#priceTable').DataTable().destroy();
+            $('#priceTable').empty();
+        }
+
         var table = $('#priceTable').DataTable({
             data: rows,
             columns: headers,
             pageLength: 20,
-            fixedHeader: true,
+            destroy: true,
             columnDefs: [
-                { targets: "_all", defaultContent: "" } // Защита от пустых или битых ячеек
+                { 
+                    targets: "_all", 
+                    defaultContent: "", 
+                    render: function(data, type, row) {
+                        return data ? '<span style="color: #212529 !important; display: block;">' + data + '</span>' : '';
+                    }
+                }
             ],
             language: {
                 "processing": "Подождите...",
@@ -266,10 +286,10 @@
             }
         });
 
-        $('#priceTable tbody').on('click', 'tr', function () {
-            var data = table.row(this).data();
-            if (data) {
-                var textToCopy = data.join(' '); 
+        $('#priceTable tbody').off('click', 'tr').on('click', 'tr', function () {
+            var rowData = table.row(this).data();
+            if (rowData) {
+                var textToCopy = rowData.join(' '); 
                 navigator.clipboard.writeText(textToCopy).then(function() {
                     showToast();
                 }, function(err) { console.error('Ошибка копирования: ', err); });
