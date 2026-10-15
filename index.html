@@ -171,7 +171,7 @@
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net/js/jquery.dataTables.min.js"></script>
 
 <script>
     const FILE_NAME = 'price.xlsx'; 
@@ -222,7 +222,7 @@
     document.getElementById('fileInput').addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        $('#manual-upload').hide();
+        $('#manual-upload-div').hide();
         $('#loading').html('<div class="spinner"></div><div>Обработка...</div>').show();
         var reader = new FileReader();
         reader.onload = function(e) { processData(new Uint8Array(e.target.result)); };
@@ -245,7 +245,7 @@
         var headers = rawHeaders.map(function(h, index) {
             return { 
                 title: h ? String(h) : "Колонка " + (index + 1),
-                width: index === 0 ? "80%" : "20%" // Задаем пропорции: колонка бренда широкая, цены — компактные
+                width: index === 0 ? "80%" : "20%"
             };
         });
 
@@ -260,8 +260,9 @@
 
         $.fn.dataTable.ext.errMode = 'none';
 
+        // Уничтожаем старую таблицу со сбросом кэша и состояния пагинации
         if ($.fn.DataTable.isDataTable('#priceTable')) {
-            $('#priceTable').DataTable().destroy();
+            $('#priceTable').DataTable().clear().destroy();
             $('#priceTable').empty();
         }
 
@@ -269,7 +270,9 @@
             data: rows,
             columns: headers,
             pageLength: 20,
-            autoWidth: false, // Отключаем авторасчет, чтобы ширины из columns работали стабильно
+            displayStart: 0, // ПРИНУДИТЕЛЬНО начинаем с 0-й строки (1-я страница)
+            stateSave: false, // Отключаем сохранение состояния пагинации в браузере
+            autoWidth: false,
             destroy: true,
             columnDefs: [
                 { 
@@ -289,6 +292,9 @@
                 "zeroRecords": "Аромат не найден"
             }
         });
+
+        // Принудительно переходим на первую страницу на всякий случай
+        table.page('first').draw('page');
 
         $('#priceTable tbody').off('click', 'tr').on('click', 'tr', function () {
             var rowData = table.row(this).data();
