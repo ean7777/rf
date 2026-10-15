@@ -31,14 +31,14 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 0; /* Убрал отступы body, чтобы футер был во всю ширину */
+            padding: 0;
             background-color: #f8f9fa;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
         .main-content {
-            flex: 1; /* Чтобы футер всегда был прижат к низу */
+            flex: 1;
             padding: 20px;
         }
         .container {
@@ -88,7 +88,7 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #table-wrapper { display: none; }
 
-        /* === ПОДВАЛ (FOOTER) === */
+        /* ПОДВАЛ */
         footer {
             background-color: #343a40;
             color: #fff;
@@ -245,11 +245,17 @@
             });
         });
 
+        // Отключаем всплывающие ошибки DataTables
+        $.fn.dataTable.ext.errMode = 'none';
+
         var table = $('#priceTable').DataTable({
             data: rows,
             columns: headers,
             pageLength: 20,
             fixedHeader: true,
+            columnDefs: [
+                { targets: "_all", defaultContent: "" } // Защита от пустых или битых ячеек
+            ],
             language: {
                 "processing": "Подождите...",
                 "search": "🔍 Поиск аромата:",
@@ -288,4 +294,3 @@
 
 </body>
 </html>
-
